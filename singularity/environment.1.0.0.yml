@@ -1,0 +1,20 @@
+name: nf-illmap-1.0.0
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bcftools=1.9
+  - ivar
+  - snippy
+  - python=3.6.7
+  - pip=19.3.1
+  - pip:
+    - attrs==19.3.0
+    - biopython==1.76
+    - click==7.0
+    - filter_classified_reads==0.2.0
+    - vcf_consensus_builder
+    - numpy==1.18.0
+    - pandas==0.25.3
+    - seaborn
