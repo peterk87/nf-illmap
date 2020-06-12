@@ -88,7 +88,8 @@ def main(depths_file,
 		df = df.set_index('pos')
 		for idx, row in df_vcf.iterrows():
 			depth = df.loc[row.POS, 'depth']
-			ax.axvline(x=row.POS, color=NT_COLOURS[row.ALT], alpha=0.5)
+			color = NT_COLOURS.get(row.ALT, '#555555')
+			ax.axvline(x=row.POS, color=color, alpha=0.5)
 			ax.text(row.POS, depth, f'{row.REF}->{row.ALT}\nPostion: {row.POS}', fontsize='xx-small')
 	fig.savefig(output_pdf, bbox_inches='tight')
 
