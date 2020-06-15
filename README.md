@@ -3,6 +3,8 @@
 Nextflow workflow for Illumina read mapping, variant calling and consensus sequence generation using Snippy
 
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
+[![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/4435)
+
 
 ## Usage
 
