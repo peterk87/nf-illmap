@@ -184,7 +184,8 @@ process MAP_STATS {
     tuple val(sample),
           path(ref_fasta),
           path(snippy_outdir),
-          path(depths)
+          path(depths), emit: depths
+    tuple path('*.flagstat'), path('*.idxstats'), emit: other_stats
   script:
   ref_name = ref_fasta.getBaseName()
   depths = "${sample}-VS-${ref_name}-depths.tsv"
@@ -321,7 +322,7 @@ workflow {
   }
   ch_reads | combine(ch_refs) | SNIPPY | MAP_STATS
 
-  MAP_STATS.out \
+  MAP_STATS.out.depths \
     | filter { 
       // Filter for alignments that did have some reads mapping to the ref genome
       depth_linecount = file(it[3]).readLines().size()
