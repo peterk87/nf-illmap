@@ -29,7 +29,7 @@ def read_depths(fpath) -> pd.DataFrame:
     return df
 
 
-def depth_plot(ax, df, low=3):
+def depth_plot(ax, df, low=3, highlight_low_cov=True, highlight_no_cov=True):
     plt.sca(ax)
     genome = df.genome.values[0]
     reference = df.reference.values[0]
@@ -50,8 +50,10 @@ def depth_plot(ax, df, low=3):
     ax.set_ylim(top=df.depth.max())
     ax.set_xlim(left=1, right=df.pos.max())
     ax.fill_between('pos', 'depth', 0, data=df, color='darkgrey')
-    ax.fill_between('pos', 'depth', df.depth, where=dflow.depth > df.depth, color='yellow', data=dflow)
-    ax.fill_between('pos', 'depth', df.depth, where=df0.depth > df.depth, color='red', data=df0)
+    if highlight_low_cov:
+        ax.fill_between('pos', 'depth', df.depth, where=dflow.depth > df.depth, color='yellow', data=dflow)
+    if highlight_no_cov:
+        ax.fill_between('pos', 'depth', df.depth, where=df0.depth > df.depth, color='red', data=df0)
 
 
 @click.command()
@@ -62,14 +64,16 @@ def depth_plot(ax, df, low=3):
 @click.option('--log-scale-y', is_flag=True)
 @click.option('-w', '--width', default=12, type=int)
 @click.option('-h', '--height', default=10, type=int)
+@click.option('--no-highlight', is_flag=True)
 def main(depths_file, 
 		 output_pdf,
 		 vcf_file,
 		 low_coverage,
 		 log_scale_y,
 		 width,
-		 height):
-	
+		 height,
+	         no_highlight):
+	highlight_low_no_cov_regions = not no_highlight
 	mplstyle.use(['seaborn',])
 	df = read_depths(depths_file)
 	df_vcf = None
@@ -83,7 +87,11 @@ def main(depths_file,
 		formatter = ScalarFormatter()
 		formatter.set_scientific(False)
 		ax.yaxis.set_major_formatter(formatter)
-	depth_plot(ax, df, low=low_coverage)
+	depth_plot(ax, 
+		   df, 
+		   low=low_coverage, 
+		   highlight_low_cov=highlight_low_no_cov_regions,
+		   highlight_no_cov=highlight_low_no_cov_regions)
 	if df_vcf is not None:
 		df = df.set_index('pos')
 		for idx, row in df_vcf.iterrows():
