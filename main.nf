@@ -173,7 +173,9 @@ process SNIPPY {
 
 process MAP_STATS {
   tag "$sample VS $ref_name"
-  publishDir "${params.outdir}/mapping_stats", mode: 'copy', pattern: "*.{tsv,flagstat,idxstats}"
+  publishDir "${params.outdir}/mapping_stats", 
+      mode: 'copy', 
+      pattern: "*.{tsv,flagstat,idxstats,stats}"
 
   input:
     tuple val(sample),
@@ -181,21 +183,24 @@ process MAP_STATS {
           path(snippy_outdir)
 
   output:
-    tuple val(sample),
-          path(ref_fasta),
-          path(snippy_outdir),
-          path(depths), emit: depths
-    tuple path('*.flagstat'), path('*.idxstats'), emit: other_stats
+  tuple val(sample),
+        path(ref_fasta),
+        path(snippy_outdir),
+        path(depths), emit: depths
+  path '*.{flagstat,idxstats,stats}', emit: mqc
   script:
   ref_name = ref_fasta.getBaseName()
-  depths = "${sample}-VS-${ref_name}-depths.tsv"
-  flagstat = "${sample}-VS-${ref_name}.flagstat"
-  idxstats = "${sample}-VS-${ref_name}.idxstats"
+  prefix = "${sample}-VS-${ref_name}"
+  depths = "${prefix}-depths.tsv"
+  flagstat = "${prefix}.flagstat"
+  idxstats = "${prefix}.idxstats"
+  stats = "${prefix}.stats"
   bam = "${snippy_outdir}/${sample}.bam"
   """
   samtools flagstat $bam > $flagstat
   samtools depth -a -d 0 $bam | perl -ne 'chomp \$_; print "${sample}\t\$_\n"' > $depths
-  samtools idxstats $bam | head -n1 | perl -ne 'chomp \$_; print "${sample}\t\$_\n"' > $idxstats
+  samtools idxstats $bam > $idxstats
+  samtools stats $bam > $stats
   """
 }
 
@@ -294,6 +299,28 @@ process COVERAGE_PLOT {
   plot_coverage.py -d $depths -o ${plot_base_filename}-log_scale.pdf --log-scale-y
   plot_coverage.py -d $depths -v $filt_vcf -o ${plot_base_filename}-with_variants.pdf
   plot_coverage.py -d $depths -v $filt_vcf -o ${plot_base_filename}-with_variants-log_scale.pdf --log-scale-y
+  plot_coverage.py --no-highlight -d $depths -o ${plot_base_filename}-no_low_cov_highlighting.pdf
+  plot_coverage.py --no-highlight --log-scale-y -d $depths -o ${plot_base_filename}-log_scale-no_low_cov_highlighting.pdf
+  plot_coverage.py --no-highlight -d $depths -v $filt_vcf -o ${plot_base_filename}-with_variants-no_low_cov_highlighting.pdf
+  plot_coverage.py --no-highlight --log-scale-y -d $depths -v $filt_vcf -o ${plot_base_filename}-with_variants-log_scale-no_low_cov_highlighting.pdf
+  """
+}
+
+process MULTIQC {
+  publishDir "${params.outdir}", mode: params.publish_dir_mode,
+      saveAs: { filename ->
+                "multiqc/$filename"
+              }
+  input:
+  path('samtools/*')
+
+  output:
+  path "*multiqc_report.html"
+  path "*_data"
+
+  script:
+  """
+  multiqc .
   """
 }
 
@@ -335,7 +362,7 @@ workflow {
     | CONSENSUS
 
   COVERAGE_PLOT(BCF_FILTER.out)
-  
+  MULTIQC(MAP_STATS.out.mqc.collect().ifEmpty([]))
 }
 
 //=============================================================================
